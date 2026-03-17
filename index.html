@@ -1,0 +1,63 @@
+<script>
+(function() {
+  // === 設定 ===
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDorS8uKdEfaOpzxsvEAB2TdQmw5LqeovuFVHkjmeea9PZBsjnKQpJB6GrFmY9cnI/exec';
+  var LIFF_ID = '2006336075-ucke3cuL';
+
+  // === uid発行 ===
+  function generateUid() {
+    var ts = Date.now();
+    var rand = Math.random().toString(36).substring(2, 8);
+    return 'trk_' + ts + '_' + rand;
+  }
+
+  // === URLパラメータ取得 ===
+  function getParam(name) {
+    var match = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  // === メイン処理 ===
+  var uid = generateUid();
+  var gclid = getParam('gclid');
+  var utmSource = getParam('utm_source');
+  var utmMedium = getParam('utm_medium');
+  var utmCampaign = getParam('utm_campaign');
+  var utmContent = getParam('utm_content');
+  var utmTerm = getParam('utm_term');
+  var landingUrl = location.href;
+
+  // GASに広告クリック情報を送信
+  var params = [
+    'action=click',
+    'uid=' + encodeURIComponent(uid),
+    'gclid=' + encodeURIComponent(gclid),
+    'utm_source=' + encodeURIComponent(utmSource),
+    'utm_medium=' + encodeURIComponent(utmMedium),
+    'utm_campaign=' + encodeURIComponent(utmCampaign),
+    'utm_content=' + encodeURIComponent(utmContent),
+    'utm_term=' + encodeURIComponent(utmTerm),
+    'landing_url=' + encodeURIComponent(landingUrl)
+  ].join('&');
+
+  var img = new Image();
+  img.src = GAS_URL + '?' + params + '&callback=_trk';
+
+  // LINEボタンのリンクにuidを付与
+  var liffUrl = 'https://liff.line.me/' + LIFF_ID + '?uid=' + encodeURIComponent(uid);
+
+  // GTMはDOMContentLoaded後に発火する場合があるので両方対応
+  function setLineButtons() {
+    var buttons = document.querySelectorAll('.line-cta');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].href = liffUrl;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setLineButtons);
+  } else {
+    setLineButtons();
+  }
+})();
+</script>
