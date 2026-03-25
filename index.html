@@ -33,31 +33,22 @@
   </style>
 </head>
 <body>
-
 <div class="loading">
   <div class="spinner"></div>
   <p>LINE連携中です...<br>しばらくお待ちください</p>
 </div>
-
 <script>
 (function() {
-  // === 設定 ===
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbyiNGq_VJMFmDp8Tw6tddGE7_FNhrANdF4GE0-8WpzwGlm7dG81KKFCcf2tUvZwevMI';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbyo84WkG6ATCQn4FTdoIktMFTpn6koEMF-d1c0Ye8EdQy0cV7uX15XUHZprh43iA0ik/exec';
   var LIFF_ID = '2006336075-ucke3cuL';
   var LINE_OA_URL = 'https://lin.ee/cTPNnE8';
-
-  // === URLパラメータ取得 ===
   function getParam(name) {
     var match = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
     return match ? decodeURIComponent(match[1]) : '';
   }
-
-  // === 公式アカウントのトーク画面へ遷移 ===
   function goToChat() {
     window.location.href = LINE_OA_URL;
   }
-
-  // === LIFF初期化 → プロフィール取得 → GAS送信 → トーク画面へ ===
   liff.init({ liffId: LIFF_ID })
     .then(function() {
       if (!liff.isLoggedIn()) {
@@ -68,23 +59,17 @@
     })
     .then(function(profile) {
       if (!profile) return;
-
       var uid = getParam('uid');
       var lineUserId = profile.userId;
       var lineDisplayName = profile.displayName;
-
-      // GASにLINE情報を送信（レスポンスを待たずに遷移）
       var params = [
         'action=line',
         'uid=' + encodeURIComponent(uid),
         'line_user_id=' + encodeURIComponent(lineUserId),
         'line_display_name=' + encodeURIComponent(lineDisplayName)
       ].join('&');
-
       var img = new Image();
       img.src = GAS_URL + '?' + params + '&callback=_liff';
-
-      // 送信後すぐにトーク画面へ
       setTimeout(goToChat, 500);
     })
     .catch(function(err) {
@@ -93,6 +78,5 @@
     });
 })();
 </script>
-
 </body>
 </html>
