@@ -37,39 +37,53 @@
   <div class="spinner"></div>
   <p>LINE連携中です...<br>しばらくお待ちください</p>
 </div>
+
 <script>
 (function() {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbyiNGq_VJMFmDp8Tw6tddGE7_FNhrANdF4GE0-8WpzwGlm7dG81KKFCcf2tUvZwevMI/exec';
-  var LIFF_ID = '2006336075-XpvFG3Pm';
-  var LINE_OA_URL = 'https://lin.ee/YkHL1Dg';
+
+  // 新LIFF ID
+  var LIFF_ID = '2006336075-oydgbT3q';
+
+  // 最終的に遷移させたいLINE
+  var LINE_OA_URL = 'https://lin.ee/w9KDlLu';
+
   function getParam(name) {
     var match = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
     return match ? decodeURIComponent(match[1]) : '';
   }
+
   function goToChat() {
     window.location.href = LINE_OA_URL;
   }
+
   liff.init({ liffId: LIFF_ID })
     .then(function() {
       if (!liff.isLoggedIn()) {
-        liff.login();
+        liff.login({
+          redirectUri: window.location.href
+        });
         return;
       }
       return liff.getProfile();
     })
     .then(function(profile) {
       if (!profile) return;
+
       var uid = getParam('uid');
       var lineUserId = profile.userId;
       var lineDisplayName = profile.displayName;
+
       var params = [
         'action=line',
         'uid=' + encodeURIComponent(uid),
         'line_user_id=' + encodeURIComponent(lineUserId),
         'line_display_name=' + encodeURIComponent(lineDisplayName)
       ].join('&');
+
       var img = new Image();
       img.src = GAS_URL + '?' + params + '&callback=_liff';
+
       setTimeout(goToChat, 500);
     })
     .catch(function(err) {
