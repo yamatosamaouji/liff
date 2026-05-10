@@ -17,6 +17,7 @@
       margin-top: 60px;
       font-size: 16px;
       color: #666;
+      line-height: 1.8;
     }
     .spinner {
       width: 40px;
@@ -35,18 +36,19 @@
 <body>
 <div class="loading">
   <div class="spinner"></div>
-  <p>LINE連携中です...<br>しばらくお待ちください</p>
+  <p id="status">LINE連携中です...<br>しばらくお待ちください</p>
 </div>
 
 <script>
 (function() {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbyiNGq_VJMFmDp8Tw6tddGE7_FNhrANdF4GE0-8WpzwGlm7dG81KKFCcf2tUvZwevMI/exec';
-
-  // 新LIFF ID
   var LIFF_ID = '2006336075-oydgbT3q';
-
-  // 最終的に遷移させたいLINE
   var LINE_OA_URL = 'https://lin.ee/w9KDlLu';
+
+  function setStatus(text) {
+    var el = document.getElementById('status');
+    if (el) el.innerHTML = text;
+  }
 
   function getParam(name) {
     var match = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
@@ -57,39 +59,73 @@
     window.location.href = LINE_OA_URL;
   }
 
-  liff.init({ liffId: LIFF_ID })
-    .then(function() {
-      if (!liff.isLoggedIn()) {
-        liff.login({
-          redirectUri: window.location.href
-        });
-        return;
-      }
-      return liff.getProfile();
-    })
-    .then(function(profile) {
-      if (!profile) return;
+  function sendLineData(uid, lineUserId, lineDisplayName) {
+    var params = [
+      'action=line',
+      'uid=' + encodeURIComponent(uid),
+      'line_user_id=' + encodeURIComponent(lineUserId),
+      'line_display_name=' + encodeURIComponent(lineDisplayName)
+    ].join('&');
 
-      var uid = getParam('uid');
-      var lineUserId = profile.userId;
-      var lineDisplayName = profile.displayName;
+    var url = GAS_URL + '?' + params + '&callback=_liff';
 
-      var params = [
-        'action=line',
-        'uid=' + encodeURIComponent(uid),
-        'line_user_id=' + encodeURIComponent(lineUserId),
-        'line_display_name=' + encodeURIComponent(lineDisplayName)
-      ].join('&');
+    // 画像ビーコンでGASへ送信
+    var img = new Image();
 
-      var img = new Image();
-      img.src = GAS_URL + '?' + params + '&callback=_liff';
-
+    // 成功/失敗に関係なく、少し待ってLINEへ遷移
+    img.onload = function() {
       setTimeout(goToChat, 500);
-    })
-    .catch(function(err) {
-      console.error('LIFF Error:', err);
-      goToChat();
-    });
+    };
+
+    img.onerror = function() {
+      setTimeout(goToChat, 700);
+    };
+
+    img.src = url;
+
+    // 念のため、2秒後には必ず遷移
+    setTimeout(goToChat, 2000);
+  }
+
+  liff.init({
+    liffId: LIFF_ID
+  })
+  .then(function() {
+    setStatus('LINEログイン確認中です...<br>しばらくお待ちください');
+
+    if (!liff.isLoggedIn()) {
+      liff.login({
+        redirectUri: window.location.href
+      });
+      return null;
+    }
+
+    return liff.getProfile();
+  })
+  .then(function(profile) {
+    if (!profile) return;
+
+    var uid = getParam('uid');
+
+    if (!uid) {
+      console.error('uid is missing');
+      setStatus('uidが取得できませんでした。<br>LINEへ移動します。');
+      setTimeout(goToChat, 1000);
+      return;
+    }
+
+    setStatus('LINE情報を記録中です...<br>しばらくお待ちください');
+
+    var lineUserId = profile.userId || '';
+    var lineDisplayName = profile.displayName || '';
+
+    sendLineData(uid, lineUserId, lineDisplayName);
+  })
+  .catch(function(err) {
+    console.error('LIFF Error:', err);
+    setStatus('LINE連携でエラーが発生しました。<br>LINEへ移動します。');
+    setTimeout(goToChat, 1000);
+  });
 })();
 </script>
 </body>
